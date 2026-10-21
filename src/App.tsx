@@ -8,6 +8,7 @@ import Toast from './components/Toast'
 import { useRoute } from './lib/route'
 import Archive from './pages/Archive'
 import Plan from './pages/Plan'
+import Stats from './pages/Stats'
 import { useUI } from './store/useUI'
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
       <Header route={route} />
       {route === 'plan' && <Plan onEndWeek={() => setModal('endWeek')} onPaste={() => setModal('paste')} />}
       {route === 'archive' && <Archive />}
+      {route === 'stats' && <Stats />}
 
       {editing && <TaskModal key={editing.taskId} {...editing} onClose={closeTask} />}
       {projectDeadline && <ProjectDeadlineModal projectId={projectDeadline} onClose={() => setProjectDeadline(null)} />}
