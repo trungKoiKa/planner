@@ -5,6 +5,7 @@ import ProjectList from '../components/ProjectList'
 import WeekBoard from '../components/WeekBoard'
 import WeekProgress from '../components/WeekProgress'
 import { allSlots } from '../lib/progress'
+import { useShortcuts } from '../lib/useShortcuts'
 import { selectWeekStart, usePlanner } from '../store/usePlanner'
 import { useUI } from '../store/useUI'
 
@@ -20,6 +21,7 @@ export default function Plan({ onEndWeek, onPaste }: Props) {
   const setAutoFocusProject = useUI((s) => s.setAutoFocusProject)
   const [banner, setBanner] = useState(false)
   const hasSlots = allSlots(projects).length > 0
+  useShortcuts(weekStart)
 
   useEffect(() => {
     if (!banner) return

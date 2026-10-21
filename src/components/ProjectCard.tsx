@@ -14,11 +14,17 @@ interface Props {
 }
 
 export default function ProjectCard({ project, handle }: Props) {
-  const { updateProject, deleteProject, addTask } = usePlanner()
-  const { autoFocusProject, setAutoFocusProject, setProjectDeadline } = useUI()
+  const { updateProject, deleteProject, insertProject, addTask } = usePlanner()
+  const { autoFocusProject, setAutoFocusProject, setProjectDeadline, addingIn, setAddingIn, showToast } = useUI()
   const [title, setTitle] = useState(project.title)
-  const [adding, setAdding] = useState(false)
+  const adding = addingIn === project.id
   const prog = projectProgress(project)
+
+  const remove = () => {
+    const index = usePlanner.getState().projects.findIndex((p) => p.id === project.id)
+    deleteProject(project.id)
+    showToast(`Deleted “${project.title || 'Untitled project'}”.`, { label: 'Undo', run: () => insertProject(project, index) })
+  }
 
   return (
     <div className="card project-card">
@@ -40,7 +46,7 @@ export default function ProjectCard({ project, handle }: Props) {
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.currentTarget.blur()
-              setAdding(true)
+              setAddingIn(project.id)
             }
           }}
           aria-label="Project name"
@@ -50,7 +56,7 @@ export default function ProjectCard({ project, handle }: Props) {
           <span className="mono muted">{prog.done}/{prog.total}</span>
         </div>
         <button className="icon-btn" onClick={() => setProjectDeadline(project.id)} aria-label="Project deadline" title="Project deadline">⏱</button>
-        <button className="icon-btn" onClick={() => deleteProject(project.id)} aria-label="Delete project">×</button>
+        <button className="icon-btn" onClick={remove} aria-label="Delete project">×</button>
       </div>
       {project.deadline && (
         <div className={`deadline-tag${isOverdue(project.deadline) ? ' overdue' : ''}`} style={{ marginTop: 4 }}>
@@ -60,9 +66,9 @@ export default function ProjectCard({ project, handle }: Props) {
       <div className="task-list">
         <TaskList project={project} />
         {adding ? (
-          <NewTaskInput onAdd={(t) => addTask(project.id, t)} onDone={() => setAdding(false)} />
+          <NewTaskInput onAdd={(t) => addTask(project.id, t)} onDone={() => setAddingIn(null)} />
         ) : (
-          <button className="add-task" onClick={() => setAdding(true)}>+ add task</button>
+          <button className="add-task" onClick={() => setAddingIn(project.id)}>+ add task</button>
         )}
       </div>
     </div>

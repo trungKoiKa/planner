@@ -20,6 +20,8 @@ export interface PlannerState extends PlannerData {
   moveSlot: (projectId: string, taskId: string, slotId: string, to: Day, missedOn?: string) => void
   setWeekStart: (weekStart: string | null) => void
   replaceData: (data: PlannerData) => void
+  insertProject: (project: Project, index: number) => void
+  insertTask: (projectId: string, task: Task, index: number) => void
   endWeek: (mode: EndWeekMode) => void
   appendProjects: (projects: Project[]) => void
 }
@@ -101,6 +103,18 @@ export const usePlanner = create<PlannerState>()(
 
         setWeekStart: (weekStart) => set({ weekStart: weekStart === currentWeekStart() ? null : weekStart }),
         replaceData: (data) => set({ projects: data.projects, archives: data.archives, weekStart: data.weekStart }),
+        insertProject: (project, index) =>
+          set((s) => {
+            const projects = s.projects.slice()
+            projects.splice(index, 0, project)
+            return { projects }
+          }),
+        insertTask: (projectId, task, index) =>
+          mapProject(projectId, (p) => {
+            const tasks = p.tasks.slice()
+            tasks.splice(index, 0, task)
+            return { ...p, tasks }
+          }),
         endWeek: (mode) => set((s) => endWeek(s, mode)),
         appendProjects: (projects) => set((s) => ({ projects: [...s.projects, ...projects] })),
       }
