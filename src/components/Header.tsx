@@ -2,12 +2,22 @@ import { APP_NAME, SUPPORT_URL } from '../config'
 import { navigate, type Route } from '../lib/route'
 import { currentWeekStart, formatRange, shiftWeek, weekLabel } from '../lib/week'
 import { selectWeekStart, usePlanner } from '../store/usePlanner'
+import { useAuth } from '../store/sync'
 import { useUI } from '../store/useUI'
+
+const STATUS = {
+  guest: 'Guest · saved locally',
+  loading: 'Loading…',
+  saving: 'Saving…',
+  synced: 'Synced',
+  error: 'Sync error',
+} as const
 
 export default function Header({ route }: { route: Route }) {
   const weekStart = usePlanner(selectWeekStart)
   const setWeekStart = usePlanner((s) => s.setWeekStart)
   const setFocusDay = useUI((s) => s.setFocusDay)
+  const { user, status, error } = useAuth()
   const isCurrent = weekStart === currentWeekStart()
 
   const go = (ws: string) => {
@@ -35,10 +45,10 @@ export default function Header({ route }: { route: Route }) {
 
       <nav className="header-nav">
         <a className="btn ghost" href={SUPPORT_URL} target="_blank" rel="noreferrer">♥ Support</a>
-        <span className="status">Guest · saved locally</span>
+        <span className="status" title={error ?? undefined}>{STATUS[status]}</span>
         {route === 'plan' ? (
           <>
-            <button className="btn" onClick={() => navigate('auth')}>Sign in</button>
+            <button className="btn" onClick={() => navigate('auth')}>{user ? 'Account' : 'Sign in'}</button>
             <button className="btn" onClick={() => navigate('stats')}>Stats</button>
             <button className="btn" onClick={() => navigate('archive')}>Archive</button>
           </>

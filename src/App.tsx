@@ -7,6 +7,7 @@ import TaskModal from './components/modals/TaskModal'
 import Toast from './components/Toast'
 import { useRoute } from './lib/route'
 import Archive from './pages/Archive'
+import Auth from './pages/Auth'
 import Plan from './pages/Plan'
 import Stats from './pages/Stats'
 import { useUI } from './store/useUI'
@@ -16,6 +17,8 @@ export default function App() {
   const { editing, closeTask, projectDeadline, setProjectDeadline } = useUI()
   const [modal, setModal] = useState<'endWeek' | 'paste' | null>(null)
   const close = () => setModal(null)
+
+  if (route === 'auth') return <div className="shell"><Auth /></div>
 
   return (
     <div className="shell">
