@@ -1,4 +1,15 @@
-import { useState } from 'react'
+import {
+  DndContext,
+  PointerSensor,
+  pointerWithin,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
+import { useState, type ReactNode } from 'react'
 import { formatDeadline, joinDeadline, splitDeadline } from '../../lib/deadline'
 import { DAY_LABEL } from '../../lib/week'
 import { newSlot, sortSlots, usePlanner } from '../../store/usePlanner'
@@ -21,6 +32,7 @@ export default function TaskModal({ projectId, taskId, onClose }: Props) {
   const [time, setTime] = useState(initial.time)
   const [desc, setDesc] = useState(task?.desc ?? '')
   const [slots, setSlots] = useState<Slot[]>(task?.slots ?? [])
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }))
 
   if (!project || !task) return null
 
@@ -35,6 +47,22 @@ export default function TaskModal({ projectId, taskId, onClose }: Props) {
   const patchSlot = (id: string, patch: Partial<Slot>) =>
     setSlots((prev) => sortSlots(prev.map((s) => (s.id === id ? { ...s, ...patch } : s))))
   const removeSlot = (id: string) => setSlots((prev) => prev.filter((s) => s.id !== id))
+
+  /** Drop on a day group moves the slot to the end of that day; drop on a slot places it before that slot. */
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over) return
+    const [kind, target] = String(over.id).split(':')
+    setSlots((prev) => {
+      const dragged = prev.find((s) => s.id === active.id)
+      if (!dragged || target === dragged.id) return prev
+      const rest = prev.filter((s) => s.id !== dragged.id)
+      if (kind === 'day') return sortSlots([...rest, { ...dragged, day: target as Day }])
+      const idx = rest.findIndex((s) => s.id === target)
+      if (idx < 0) return prev
+      rest.splice(idx, 0, { ...dragged, day: rest[idx].day })
+      return sortSlots(rest)
+    })
+  }
 
   const save = () => {
     updateTask(projectId, taskId, { deadline, desc: desc.trim(), slots })
@@ -68,23 +96,17 @@ export default function TaskModal({ projectId, taskId, onClose }: Props) {
           ))}
         </div>
         {slots.length === 0 && <div className="hint">No subtasks yet, so it won't show in the week.</div>}
-        {DAYS.filter((d) => activeDays.has(d)).map((day) => (
-          <div key={day} className="day-group">
-            <div className="label strong">{DAY_LABEL[day]}</div>
-            {slots.filter((s) => s.day === day).map((s) => (
-              <div key={s.id} className="sub-row">
-                <input
-                  className="input"
-                  placeholder="Note (optional)"
-                  value={s.desc}
-                  onChange={(e) => patchSlot(s.id, { desc: e.target.value })}
-                />
-                <button className="icon-btn" onClick={() => removeSlot(s.id)} aria-label="Remove subtask">×</button>
-              </div>
-            ))}
-            <button className="add-task" onClick={() => addSub(day)}>+ add subtask</button>
-          </div>
-        ))}
+        <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={onDragEnd}>
+          {DAYS.filter((d) => activeDays.has(d)).map((day) => (
+            <DayGroup key={day} day={day}>
+              <div className="label strong">{DAY_LABEL[day]}</div>
+              {slots.filter((s) => s.day === day).map((s) => (
+                <SubRow key={s.id} slot={s} onChange={(desc) => patchSlot(s.id, { desc })} onRemove={() => removeSlot(s.id)} />
+              ))}
+              <button className="add-task" onClick={() => addSub(day)}>+ add subtask</button>
+            </DayGroup>
+          ))}
+        </DndContext>
       </div>
 
       <div className="field">
@@ -97,5 +119,30 @@ export default function TaskModal({ projectId, taskId, onClose }: Props) {
         <button className="btn primary" onClick={save}>Save</button>
       </div>
     </Modal>
+  )
+}
+
+function DayGroup({ day, children }: { day: Day; children: ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `day:${day}` })
+  return (
+    <div ref={setNodeRef} className={`day-group${isOver ? ' drop' : ''}`}>
+      {children}
+    </div>
+  )
+}
+
+function SubRow({ slot, onChange, onRemove }: { slot: Slot; onChange: (desc: string) => void; onRemove: () => void }) {
+  const drag = useDraggable({ id: slot.id })
+  const drop = useDroppable({ id: `slot:${slot.id}` })
+  return (
+    <div
+      ref={(el) => { drag.setNodeRef(el); drop.setNodeRef(el) }}
+      className="sub-row"
+      style={{ transform: CSS.Translate.toString(drag.transform), opacity: drag.isDragging ? 0.6 : 1, zIndex: drag.isDragging ? 5 : undefined, position: 'relative' }}
+    >
+      <button ref={drag.setActivatorNodeRef} className="handle" aria-label="Drag to another day" {...drag.attributes} {...drag.listeners}>⠿</button>
+      <input className="input" placeholder="Note (optional)" value={slot.desc} onChange={(e) => onChange(e.target.value)} />
+      <button className="icon-btn" onClick={onRemove} aria-label="Remove subtask">×</button>
+    </div>
   )
 }
