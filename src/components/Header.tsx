@@ -3,6 +3,7 @@ import { navigate, type Route } from '../lib/route'
 import { currentWeekStart, formatRange, shiftWeek, weekLabel } from '../lib/week'
 import { selectWeekStart, usePlanner } from '../store/usePlanner'
 import { useAuth } from '../store/sync'
+import SettingsMenu from './SettingsMenu'
 import { useUI } from '../store/useUI'
 
 const STATUS = {
@@ -45,6 +46,7 @@ export default function Header({ route }: { route: Route }) {
 
       <nav className="header-nav">
         <a className="btn ghost" href={SUPPORT_URL} target="_blank" rel="noreferrer">♥ Support</a>
+        <SettingsMenu />
         <span className="status" title={error ?? undefined}>{STATUS[status]}</span>
         {route === 'plan' ? (
           <>

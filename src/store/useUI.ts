@@ -14,6 +14,8 @@ interface UIState {
   showAll: boolean
   autoFocusProject: string | null
   toast: Toast | null
+  addingIn: string | null
+  setAddingIn: (projectId: string | null) => void
   openTask: (projectId: string, taskId: string) => void
   closeTask: () => void
   setProjectDeadline: (id: string | null) => void
@@ -33,6 +35,8 @@ export const useUI = create<UIState>()((set) => ({
   showAll: false,
   autoFocusProject: null,
   toast: null,
+  addingIn: null,
+  setAddingIn: (addingIn) => set({ addingIn }),
   openTask: (projectId, taskId) => set({ editing: { projectId, taskId } }),
   closeTask: () => set({ editing: null }),
   setProjectDeadline: (projectDeadline) => set({ projectDeadline }),
