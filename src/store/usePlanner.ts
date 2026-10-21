@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { STORAGE_KEY } from '../config'
+import { endWeek, type EndWeekMode } from '../lib/endWeek'
 import { uid } from '../lib/id'
 import { currentWeekStart, dayIndex } from '../lib/week'
 import type { Day, PlannerData, Project, Slot, Task } from '../types'
@@ -19,6 +20,8 @@ export interface PlannerState extends PlannerData {
   moveSlot: (projectId: string, taskId: string, slotId: string, to: Day, missedOn?: string) => void
   setWeekStart: (weekStart: string | null) => void
   replaceData: (data: PlannerData) => void
+  endWeek: (mode: EndWeekMode) => void
+  appendProjects: (projects: Project[]) => void
 }
 
 export const emptyData = (): PlannerData => ({ projects: [], archives: [], weekStart: null })
@@ -98,6 +101,8 @@ export const usePlanner = create<PlannerState>()(
 
         setWeekStart: (weekStart) => set({ weekStart: weekStart === currentWeekStart() ? null : weekStart }),
         replaceData: (data) => set({ projects: data.projects, archives: data.archives, weekStart: data.weekStart }),
+        endWeek: (mode) => set((s) => endWeek(s, mode)),
+        appendProjects: (projects) => set((s) => ({ projects: [...s.projects, ...projects] })),
       }
     },
     {
