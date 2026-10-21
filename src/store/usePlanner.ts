@@ -16,6 +16,7 @@ export interface PlannerState extends PlannerData {
   reorderTasks: (projectId: string, from: number, to: number) => void
   toggleTask: (projectId: string, taskId: string) => void
   toggleSlot: (projectId: string, taskId: string, slotId: string) => void
+  moveSlot: (projectId: string, taskId: string, slotId: string, to: Day, missedOn?: string) => void
   setWeekStart: (weekStart: string | null) => void
   replaceData: (data: PlannerData) => void
 }
@@ -84,6 +85,16 @@ export const usePlanner = create<PlannerState>()(
           mapTask(projectId, taskId, (t) =>
             syncDone({ ...t, slots: t.slots.map((s) => (s.id === slotId ? { ...s, done: !s.done } : s)) }),
           ),
+
+        moveSlot: (projectId, taskId, slotId, to, missedOn) =>
+          mapTask(projectId, taskId, (t) => ({
+            ...t,
+            slots: sortSlots(
+              t.slots.map((s) =>
+                s.id === slotId ? { ...s, day: to, missed: missedOn ? [...s.missed, missedOn] : s.missed } : s,
+              ),
+            ),
+          })),
 
         setWeekStart: (weekStart) => set({ weekStart: weekStart === currentWeekStart() ? null : weekStart }),
         replaceData: (data) => set({ projects: data.projects, archives: data.archives, weekStart: data.weekStart }),
